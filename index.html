@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Penjualan</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-card {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            height: 400px;
+        }
+        .table-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="mb-4">Dashboard Penjualan</h1>
+    
+    <!-- Filter Data -->
+    <div class="form-container">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Filter Data Penjualan</h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="form-group">
+                        <label for="filterDate">Tanggal:</label>
+                        <input type="date" class="form-control" id="filterDate">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Row -->
+    <div class="row mt-4">
+        <!-- Penjualan Total Card -->
+        <div class="col-md-4 dashboard-card">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Total Penjualan</h5>
+                </div>
+                <div class="card-body">
+                    <h3 id="total-sales">1,000,000</h3>
+                </div>
+            </div>
+        </div>
+        <!-- Diskon Total Card -->
+        <div class="col-md-4 dashboard-card">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Total Diskon</h5>
+                </div>
+                <div class="card-body">
+                    <h3 id="total-discount">50,000</h3>
+                </div>
+            </div>
+        </div>
+        <!-- Total Setelah Diskon Card -->
+        <div class="col-md-4 dashboard-card">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Total Setelah Diskon</h5>
+                </div>
+                <div class="card-body">
+                    <h3 id="total-after-discount">950,000</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chart Row -->
+    <div class="row">
+        <!-- Grafik Penjualan Harian -->
+        <div class="col-md-6 chart-container">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Grafik Penjualan Harian</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Pie Chart Distribusi Penjualan -->
+        <div class="col-md-6 chart-container">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Distribusi Penjualan Per Kategori</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Data Penjualan -->
+    <div class="table-container">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Data Penjualan</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered" id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Produk</th>
+                            <th>Jumlah Terjual</th>
+                            <th>Harga Satuan</th>
+                            <th>Total Penjualan</th>
+                            <th>Diskon</th>
+                            <th>Total Setelah Diskon</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data Penjualan akan ditambahkan di sini -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    function updateDashboard() {
+        let salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+        let totalSales = 0;
+        let totalDiscount = 0;
+        let totalAfterDiscount = 0;
+
+        salesData.forEach(sale => {
+            let saleTotal = sale.quantity * sale.price;
+            let discountAmount = (sale.discount / 100) * saleTotal;
+            totalSales += saleTotal;
+            totalDiscount += discountAmount;
+            totalAfterDiscount += saleTotal - discountAmount;
+        });
+
+        document.getElementById('total-sales').textContent = totalSales.toLocaleString();
+        document.getElementById('total-discount').textContent = totalDiscount.toLocaleString();
+        document.getElementById('total-after-discount').textContent = totalAfterDiscount.toLocaleString();
+
+        let salesTableBody = document.querySelector('#salesTable tbody');
+        salesTableBody.innerHTML = '';
+        salesData.forEach(sale => {
+            let saleTotal = sale.quantity * sale.price;
+            let discountAmount = (sale.discount / 100) * saleTotal;
+            let totalAfterDiscount = saleTotal - discountAmount;
+            let row = `<tr>
+                            <td>${sale.date}</td>
+                            <td>${sale.product}</td>
+                            <td>${sale.quantity}</td>
+                            <td>${sale.price.toLocaleString()}</td>
+                            <td>${saleTotal.toLocaleString()}</td>
+                            <td>${sale.discount}%</td>
+                            <td>${totalAfterDiscount.toLocaleString()}</td>
+                        </tr>`;
+            salesTableBody.insertAdjacentHTML('beforeend', row);
+        });
+
+        let salesDataPerDate = {};
+        salesData.forEach(sale => {
+            if (!salesDataPerDate[sale.date]) {
+                salesDataPerDate[sale.date] = 0;
+            }
+            salesDataPerDate[sale.date] += sale.quantity * sale.price;
+        });
+
+        let labels = Object.keys(salesDataPerDate);
+        let data = Object.values(salesDataPerDate);
+
+        var ctx1 = document.getElementById('salesChart').getContext('2d');
+        var salesChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Penjualan Harian',
+                    data: data,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        var productCounts = salesData.reduce((acc, sale) => {
+            acc[sale.product] = (acc[sale.product] || 0) + sale.quantity * sale.price;
+            return acc;
+        }, {});
+
+        var ctx2 = document.getElementById('distributionChart').getContext('2d');
+        var distributionChart = new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(productCounts),
+                datasets: [{
+                    label: 'Distribusi Penjualan',
+                    data: Object.values(productCounts),
+                    backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)'],
+                    borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+    }
+
+    document.getElementById('filterForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        let filterDate = document.getElementById('filterDate').value;
+        let salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+        if (filterDate) {
+            salesData = salesData.filter(sale => sale.date === filterDate);
+        } else {
+            salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+        }
+        localStorage.setItem('salesData', JSON.stringify(salesData));
+        updateDashboard();
+    });
+
+    updateDashboard();
+</script>
+
+</body>
+</html>
